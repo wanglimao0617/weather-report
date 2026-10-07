@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#123b38">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23123b38'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%23f3c86f' stroke-width='2'/%3E%3C/svg%3E">
+    <title>天际天气</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+</head>
+<body class="{% if weather %}theme-{{ weather.theme }}{% endif %}">
+    {% include "_icons.html" %}
+
+    <div class="page-shell">
+        <header class="topbar">
+            <a class="brand" href="/" aria-label="天际天气首页">
+                <span class="brand-mark">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-compass"></use></svg>
+                </span>
+                <span>
+                    <span class="brand-name">天际天气</span>
+                    <span class="brand-caption">WEATHER DESK</span>
+                </span>
+            </a>
+            <div class="topbar-status">
+                <span class="status-dot"></span>
+                {% if weather %}
+                {% if demo_mode %}演示数据 · {% endif %}更新于 {{ weather.updated_at }}
+                {% else %}
+                {% if demo_mode %}演示模式{% else %}实时气象数据{% endif %}
+                {% endif %}
+            </div>
+        </header>
+
+        <main>
+            <section class="search-panel" aria-label="城市天气查询">
+                <form class="search-form" method="post" data-search-form>
+                    <label class="sr-only" for="city-input">城市或地区名称</label>
+                    <div class="search-field">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                        <input
+                            class="city-input"
+                            id="city-input"
+                            name="city"
+                            type="text"
+                            value="{{ city }}"
+                            placeholder="输入城市或地区名称"
+                            autocomplete="off"
+                            required
+                        >
+                    </div>
+                    <button class="primary-button" type="submit" data-submit-button>
+                        <svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+                        <span data-button-label>查询天气</span>
+                    </button>
+                </form>
+
+                <div class="quick-cities" aria-label="常用城市">
+                    {% for suggestion in city_suggestions %}
+                    <form class="quick-form" method="post">
+                        <input type="hidden" name="city" value="{{ suggestion }}">
+                        <button class="quick-city" type="submit">{{ suggestion }}</button>
+                    </form>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if error_message %}
+            <div class="notice notice-error" role="alert">
+                <svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>
+                <span>{{ error_message }}</span>
+            </div>
+            {% endif %}
+
+            {% if geo_list and not weather %}
+            <section class="panel location-panel">
+                <div class="section-heading">
+                    <div>
+                        <h2>选择具体地点</h2>
+                        <p>“{{ city }}”匹配到 {{ geo_list|length }} 个地点</p>
+                    </div>
+                </div>
+                <div class="location-list">
+                    {% for item in geo_list %}
+                    <form method="post">
+                        <input type="hidden" name="city" value="{{ city }}">
+                        <input type="hidden" name="selected_idx" value="{{ loop.index0 }}">
+                        <button class="location-option" type="submit">
+                            <span>{{ item.formatted_address }}</span>
+                            <svg class="icon" aria-hidden="true"><use href="#icon-navigation"></use></svg>
+                        </button>
+                    </form>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            {% if weather %}
+            <section class="hero-panel">
+                <div class="hero-main">
+                    <div class="location-line">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-map-pin"></use></svg>
+                        <span>{{ weather.addr }}</span>
+                    </div>
+                    <div class="hero-reading">
+                        <svg class="icon weather-glyph" aria-hidden="true">
+                            <use href="#icon-{{ weather.current.icon }}"></use>
+                        </svg>
+                        <div>
+                            <div class="temperature">{{ weather.current.temp }}<sup>°</sup></div>
+                            <div class="hero-condition">{{ weather.current.text }}</div>
+                        </div>
+                    </div>
+                    <div class="hero-foot">
+                        <span>体感 {{ weather.current.feel }}°C</span>
+                        <span>露点 {{ weather.current.dew_point }}°C</span>
+                        <span>云量 {{ weather.current.cloud_cover }}%</span>
+                    </div>
+                </div>
+                <aside class="hero-side">
+                    <div>
+                        <div class="hero-side-label">今日温度</div>
+                        <div class="temperature-range">
+                            <div class="range-stat">
+                                <span>最高</span>
+                                <strong>{{ weather.today.temp_max }}°</strong>
+                            </div>
+                            <div class="range-stat">
+                                <span>最低</span>
+                                <strong>{{ weather.today.temp_min }}°</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sun-times">
+                        <div class="sun-time">
+                            <span>
+                                <svg class="icon" aria-hidden="true"><use href="#icon-sunrise"></use></svg>
+                                日出
+                            </span>
+                            <strong>{{ weather.today.sunrise }}</strong>
+                        </div>
+                        <div class="sun-time">
+                            <span>
+                                <svg class="icon" aria-hidden="true"><use href="#icon-sunset"></use></svg>
+                                日落
+                            </span>
+                            <strong>{{ weather.today.sunset }}</strong>
+                        </div>
+                    </div>
+                </aside>
+            </section>
+
+            <section class="metric-grid" aria-label="实时天气指标">
+                <article class="metric">
+                    <div class="metric-label">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-thermometer"></use></svg>
+                        体感温度
+                    </div>
+                    <div class="metric-value">{{ weather.current.feel }}°C</div>
+                    <div class="metric-note">实际 {{ weather.current.temp }}°C</div>
+                </article>
+                <article class="metric">
+                    <div class="metric-label">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-droplets"></use></svg>
+                        相对湿度
+                    </div>
+                    <div class="metric-value">{{ weather.current.humidity }}%</div>
+                    <div class="metric-note">露点 {{ weather.current.dew_point }}°C</div>
+                </article>
+                <article class="metric">
+                    <div class="metric-label">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-wind"></use></svg>
+                        当前风速
+                    </div>
+                    <div class="metric-value">{{ weather.current.wind_speed }} km/h</div>
+                    <div class="metric-note">{{ weather.current.wind_dir_text }}风 · 阵风 {{ weather.current.wind_gust }}</div>
+                </article>
+                <article class="metric">
+                    <div class="metric-label">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-droplets"></use></svg>
+                        降水概率
+                    </div>
+                    <div class="metric-value">{{ weather.today.precip_probability }}%</div>
+                    <div class="metric-note">当前降水 {{ weather.current.precip }} mm</div>
+                </article>
+                <article class="metric">
+                    <div class="metric-label">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-sun"></use></svg>
+                        紫外线
+                    </div>
+                    <div class="metric-value">{{ weather.today.uv_index }}</div>
+                    <div class="metric-note">{{ weather.today.uv_level }}</div>
+                </article>
+                <article class="metric">
+                    <div class="metric-label">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-gauge"></use></svg>
+                        气压
+                    </div>
+                    <div class="metric-value">{{ weather.current.pressure }} hPa</div>
+                    <div class="metric-note">海平面气压</div>
+                </article>
+            </section>
+
+            <section class="insight-grid">
+                <article class="panel forecast-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>未来 24 小时</h2>
+                            <p>逐小时温度与降水趋势</p>
+                        </div>
+                        <svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg>
+                    </div>
+                    <div class="hourly-scroll">
+                        {% for hour in weather.hourly %}
+                        <div class="hour-item" title="{{ hour.date }} {{ hour.text }}">
+                            <span class="hour-label">{{ hour.label }}</span>
+                            <svg class="icon weather-glyph" aria-hidden="true">
+                                <use href="#icon-{{ hour.icon }}"></use>
+                            </svg>
+                            <span class="hour-temp">{{ hour.temp }}°</span>
+                            <span class="rain-probability">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-droplets"></use></svg>
+                                {{ hour.precip_probability }}%
+                            </span>
+                            <span class="rain-track">
+                                <span class="rain-fill" style="--rain: {{ hour.precip_probability }}%"></span>
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="panel advice-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>出行提醒</h2>
+                            <p>根据当前天气自动生成</p>
+                        </div>
+                        <svg class="icon" aria-hidden="true"><use href="#icon-navigation"></use></svg>
+                    </div>
+                    <div class="advice-list">
+                        {% for item in weather.advice %}
+                        <div class="advice-item {{ item.level }}">
+                            <span class="advice-marker"></span>
+                            <div>
+                                <strong>{{ item.title }}</strong>
+                                <p>{{ item.detail }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </article>
+            </section>
+
+            <section class="panel daily-panel">
+                <div class="section-heading">
+                    <div>
+                        <h2>未来 7 天</h2>
+                        <p>周内温度区间与降水概率</p>
+                    </div>
+                    <svg class="icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+                </div>
+                <div class="daily-list">
+                    {% for day in weather.daily %}
+                    <div class="daily-row">
+                        <div class="day-label">
+                            <strong>{{ day.weekday }}</strong>
+                            <span>{{ day.date }}</span>
+                        </div>
+                        <div class="day-weather">
+                            <svg class="icon weather-glyph" aria-hidden="true">
+                                <use href="#icon-{{ day.icon }}"></use>
+                            </svg>
+                            <span>{{ day.text }}</span>
+                        </div>
+                        <div class="day-rain">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-droplets"></use></svg>
+                            {{ day.precip_probability }}%
+                        </div>
+                        <div class="temp-range">
+                            <span>{{ day.temp_min }}°</span>
+                            <span class="range-track">
+                                <span
+                                    class="range-fill"
+                                    style="--left: {{ day.range_left|default(0) }}%; --width: {{ day.range_width|default(4) }}%"
+                                ></span>
+                            </span>
+                            <strong>{{ day.temp_max }}°</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="bottom-grid">
+                <article class="panel air-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>空气质量</h2>
+                            <p>欧洲 AQI 实时数据</p>
+                        </div>
+                        <svg class="icon" aria-hidden="true"><use href="#icon-activity"></use></svg>
+                    </div>
+                    {% if weather.air_quality %}
+                    <div class="air-summary">
+                        <div class="aqi-value">{{ weather.air_quality.value }}</div>
+                        <div>
+                            <span class="aqi-badge {{ weather.air_quality.level }}">
+                                {{ weather.air_quality.label }}
+                            </span>
+                            <p class="aqi-caption">{{ weather.coordinates }}</p>
+                        </div>
+                    </div>
+                    <div class="pollutants">
+                        <div class="pollutant">
+                            <span>PM2.5</span>
+                            <strong>{{ weather.air_quality.pm2_5 }}</strong>
+                        </div>
+                        <div class="pollutant">
+                            <span>PM10</span>
+                            <strong>{{ weather.air_quality.pm10 }}</strong>
+                        </div>
+                        <div class="pollutant">
+                            <span>NO2</span>
+                            <strong>{{ weather.air_quality.no2 }}</strong>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="unavailable">暂时无法获取空气质量数据</div>
+                    {% endif %}
+                </article>
+
+                <article class="panel advice-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>今日概览</h2>
+                            <p>{{ weather.addr }}</p>
+                        </div>
+                        <svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>
+                    </div>
+                    <div class="overview-list">
+                        <div class="overview-item">
+                            <span>最高温度</span>
+                            <strong>{{ weather.today.temp_max }}°C</strong>
+                        </div>
+                        <div class="overview-item">
+                            <span>最低温度</span>
+                            <strong>{{ weather.today.temp_min }}°C</strong>
+                        </div>
+                        <div class="overview-item">
+                            <span>降水概率</span>
+                            <strong>{{ weather.today.precip_probability }}%</strong>
+                        </div>
+                    </div>
+                </article>
+            </section>
+            {% else %}
+            <section class="panel empty-state">
+                <div>
+                    <p class="empty-kicker">Weather overview</p>
+                    <h1>查询实时天气与未来趋势</h1>
+                    <p>输入城市或地区名称，查看当前天气、逐小时变化、未来七天预报和空气质量。</p>
+                </div>
+                <div class="empty-visual" aria-hidden="true">
+                    <svg class="icon"><use href="#icon-cloud-sun"></use></svg>
+                </div>
+            </section>
+            {% endif %}
+        </main>
+
+        <footer class="page-footer">
+            {% if demo_mode %}
+            <span>演示数据：本地模拟生成</span>
+            <span>无需 API 密钥即可运行</span>
+            {% else %}
+            <span>天气与空气质量数据：Open-Meteo</span>
+            <span>地点解析：高德地图</span>
+            {% endif %}
+        </footer>
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+
+</body>
+</html>
