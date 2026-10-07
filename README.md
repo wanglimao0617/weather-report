@@ -197,36 +197,6 @@ get_air_quality(lat, lon)
 | SVG | 天气和功能图标 |
 | Mermaid | README 系统流程图 |
 
-## 数据与安全
-
-- 项目不包含真实 API Key。
-- 项目不会向外部天气服务发送请求。
-- 所有地点、天气和空气质量数据均由 `demo_data.py` 本地生成。
-- `.gitignore` 已排除虚拟环境、缓存和 `.env` 文件。
-- 页面顶部和底部会显示“演示模式”，避免将模拟数据误认为实时天气。
-
-## 上传 GitHub
-
-如果当前文件夹尚未初始化为 Git 仓库，可以执行：
-
-```powershell
-git init
-git add .
-git status --short
-git commit -m "Initial commit: weather dashboard demo"
-git branch -M main
-git remote add origin <你的仓库地址>
-git push -u origin main
-```
-
-提交前建议检查：
-
-- 确认没有 `.env` 或真实密钥文件。
-- 确认没有提交 `__pycache__`。
-- 确认 `requirements.txt`、`README.md` 和 `run_demo.bat` 已包含在提交中。
-
-如果使用 GitHub Desktop，可以直接将当前文件夹添加为本地仓库，填写首次提交信息后点击 Publish repository。
-
 ## 常见问题
 
 ### 提示无法识别 python
